@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Zone Converter</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f0f4ff;
+    --card-bg: #ffffff;
+    --border: #d0d8f0;
+    --border-h: #99aae0;
+    --text: #1a1a3a;
+    --muted: #6677aa;
+    --accent: #3355dd;
+    --input-bg: #f8faff;
+    --work-bg: rgba(22,163,74,0.10);
+    --work-border: rgba(22,163,74,0.30);
+    --work-text: #166534;
+    --sleep-bg: rgba(220,38,38,0.08);
+    --sleep-border: rgba(220,38,38,0.25);
+    --sleep-text: #991b1b;
+  }
+  html,body{height:100%;}
+  body {
+    background: linear-gradient(135deg, #e8eeff 0%, #f4f0ff 50%, #e8f4ff 100%);
+    color: var(--text);
+    font-family: 'Georgia','Times New Roman',serif;
+    min-height:100vh;
+    display:flex; flex-direction:column; align-items:center;
+    padding:76px 16px 40px;
+  }
+  @media(max-width:600px){
+    body { padding:56px 12px 32px; }
+    .g2,.g3 { grid-template-columns:1fr !important; }
+    .card { padding:24px 18px; }
+    h1.title { font-size:20px; }
+    .seg { width:100%; }
+    .seg label { flex:1; text-align:center; }
+  }
+  #topHeader {
+    position:fixed; top:0; left:0; right:0;
+    background:rgba(255,255,255,0.96); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
+    z-index:300;
+    box-shadow: 0 2px 12px rgba(80,100,200,0.08);
+  }
+  .hdr-inner {
+    display:flex; align-items:center; justify-content:space-between;
+    height:56px; padding:0 20px;
+  }
+  .hdr-title{font-size:14px;color:var(--accent);letter-spacing:.07em;font-weight:bold;}
+  .hdr-links{display:flex;gap:22px;}
+  .hdr-links button{background:none;border:none;color:var(--muted);font-family:Georgia,serif;font-size:13px;letter-spacing:.05em;cursor:pointer;transition:color .2s;padding:4px 0;}
+  .hdr-links button:hover{color:var(--accent);}
+  .hdr-burger {
+    display:none; flex-direction:column; justify-content:center; align-items:center;
+    gap:5px; width:40px; height:40px; background:none; border:none;
+    cursor:pointer; padding:4px; border-radius:6px; transition:background .2s;
+  }
+  .hdr-burger:hover { background:rgba(51,85,221,0.07); }
+  .hdr-burger span {
+    display:block; width:22px; height:2px;
+    background:var(--muted); border-radius:2px; transition:all .25s;
+  }
+  .hdr-burger.open span:nth-child(1){ transform:translateY(7px) rotate(45deg); background:var(--accent); }
+  .hdr-burger.open span:nth-child(2){ opacity:0; }
+  .hdr-burger.open span:nth-child(3){ transform:translateY(-7px) rotate(-45deg); background:var(--accent); }
+  .hdr-dropdown {
+    display:none; flex-direction:column;
+    border-top:1px solid var(--border);
+    padding:8px 0 12px;
+    background:rgba(255,255,255,0.98);
+  }
+  .hdr-dropdown.open { display:flex; }
+  .hdr-dropdown button {
+    background:none; border:none; color:var(--muted);
+    font-family:Georgia,serif; font-size:15px; letter-spacing:.04em;
+    cursor:pointer; text-align:left; padding:12px 20px;
+    transition:all .15s; border-left:2px solid transparent;
+  }
+  .hdr-dropdown button:hover { color:var(--accent); background:rgba(51,85,221,0.04); border-left-color:var(--accent); }
+  @media(max-width:600px){
+    .hdr-links { display:none; }
+    .hdr-burger { display:flex; }
+    body { padding-top:56px; }
+  }
+  .card{width:100%;max-width:820px;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:40px;box-shadow:0 4px 32px rgba(80,100,200,0.10);}
+  .card.wide{max-width:980px;}
+  h1.title{font-size:26px;font-weight:normal;color:#1a1a3a;letter-spacing:.02em;margin-bottom:6px;}
+  p.subtitle{color:var(--muted);font-size:13px;margin-bottom:30px;}
+  .lbl{font-size:11px;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;display:block;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+  .ff{margin-bottom:20px;}
+  select,input[type=time],input[type=date]{width:100%;padding:10px 14px;background:var(--input-bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:Georgia,serif;outline:none;color-scheme:light;transition:border-color .2s;}
+  select:hover,input:hover{border-color:var(--border-h);}
+  select:focus,input:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(51,85,221,0.1);}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236677aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;}
+  select option{background:#ffffff; color:#1a1a3a;}
+  .live-box{padding:14px 18px;background:linear-gradient(135deg,#eef2ff,#f0f8ff);border:1px solid var(--border);border-radius:10px;font-size:16px;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:.02em;}
+  .res-box{margin-top:16px;padding:14px 18px;background:linear-gradient(135deg,#f0f4ff,#f4f0ff);border:1px solid var(--border);border-radius:10px;font-size:15px;color:#2233aa;display:none;}
+  .res-box.show{display:block;}
+  button.primary{padding:11px 26px;background:linear-gradient(135deg,#3355dd,#2244cc);color:#ffffff;border:none;border-radius:8px;font-size:14px;font-family:Georgia,serif;letter-spacing:.05em;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(51,85,221,0.25);}
+  button.primary:hover{background:linear-gradient(135deg,#4466ee,#3355dd);box-shadow:0 4px 16px rgba(51,85,221,0.35);transform:translateY(-1px);}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .seg label{padding:9px 20px;background:var(--input-bg);color:var(--muted);font-size:13px;cursor:pointer;user-select:none;transition:all .2s;letter-spacing:.03em;}
+  .seg label.active{background:#3355dd;color:#ffffff;}
+  .seg input[type=radio]{display:none;}
+  .page{display:none;width:100%;flex-direction:column;align-items:center;}
+  .page.show{display:flex;}
+  .twrap{overflow-x:auto;margin-top:8px;}
+  .twrap::-webkit-scrollbar{height:5px;}
+  .twrap::-webkit-scrollbar-track{background:#eef0ff;}
+  .twrap::-webkit-scrollbar-thumb{background:#aabbdd;border-radius:3px;}
+  table.sched{width:100%;border-collapse:collapse;font-size:13px;min-width:480px;font-variant-numeric:tabular-nums;}
+  table.sched th{padding:11px 16px;background:#f4f7ff;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;font-weight:normal;}
+  table.sched td{padding:9px 16px;color:#334466;border-bottom:1px solid #e8eef8;white-space:nowrap;}
+  table.sched tr:hover td { background:rgba(51,85,221,0.03); }
+  table.sched tr.fr td { outline: none; }
+  table.sched td.cell-work {
+    background: var(--work-bg);
+    color: var(--work-text);
+  }
+  table.sched td.cell-sleep {
+    background: var(--sleep-bg);
+    color: var(--sleep-text);
+  }
+  table.sched tr.all-work {
+    outline: 2px solid rgba(22,163,74,0.6);
+    outline-offset: -1px;
+    position: relative;
+    z-index: 1;
+  }
+  table.sched tr.all-work td {
+    background: rgba(22,163,74,0.12);
+    color: #14532d;
+    font-weight: bold;
+  }
+  .legend{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;}
+  .legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);}
+  .ldot{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  .ldot.w{background:var(--work-bg);border:1px solid var(--work-border);}
+  .ldot.s{background:var(--sleep-bg);border:1px solid var(--sleep-border);}
+  .ldot.aw{background:rgba(22,163,74,0.15);border:2px solid rgba(22,163,74,0.6);}
+  .snote{margin-top:16px;color:#8899bb;font-size:12px;line-height:1.6;}
+  .ssum{color:var(--muted);font-size:13px;margin-bottom:4px;}
+  .err{color:#cc2222;font-size:13px;margin-top:8px;display:none;}
+  .err.show{display:block;}
+</style>
+</head>
+<body>
+
+<header id="topHeader">
+  <div class="hdr-inner">
+    <div class="hdr-title" id="hdrTitle">Time Zone Converter</div>
+    <div class="hdr-links" id="hdrLinks"></div>
+    <button class="hdr-burger" id="hdrBurger" aria-label="Menu" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="hdr-dropdown" id="hdrDropdown"></div>
+</header>
+
+<!-- AUTO -->
+<div class="page show" id="pg-auto">
+  <div class="card">
+    <h1 class="title">Time Zone Converter</h1>
+    <p class="subtitle">Convert the current live time between UTC offsets.</p>
+    <div class="ff"><span class="lbl">Current Time</span><div class="live-box" id="liveDisp">Loading…</div></div>
+    <div class="g2">
+      <div><span class="lbl">From</span><select id="aFrom"></select></div>
+      <div><span class="lbl">To</span><select id="aTo"></select></div>
+    </div>
+    <div class="res-box show" id="aRes">—</div>
+  </div>
+</div>
+
+<!-- MANUAL -->
+<div class="page" id="pg-manual">
+  <div class="card">
+    <h1 class="title">Manual Time Zone Converter</h1>
+    <p class="subtitle">Enter a time manually, then convert it between UTC offsets.</p>
+    <div class="ff"><span class="lbl">Select Time</span><input type="time" id="mTime"></div>
+    <div class="g2">
+      <div><span class="lbl">From</span><select id="mFrom"></select></div>
+      <div><span class="lbl">To</span><select id="mTo"></select></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+      <button class="primary" onclick="doManual()">Convert Time</button>
+      <div class="res-box" id="mRes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PLANNER -->
+<div class="page" id="pg-planner">
+  <div class="card">
+    <h1 class="title">Global Meeting Planner</h1>
+    <p class="subtitle">Pick a date to view the schedule across your selected time zones.</p>
+    <div class="ff"><span class="lbl">Meeting Date</span><input type="date" id="pDate"></div>
+    <div class="ff">
+      <span class="lbl">Convert To</span>
+      <div class="seg">
+        <label id="s1" class="active"><input type="radio" name="tc" value="1" checked onchange="setCount(1)"><span>One Time Zone</span></label>
+        <label id="s2"><input type="radio" name="tc" value="2" onchange="setCount(2)"><span>Two Time Zones</span></label>
+      </div>
+    </div>
+    <div id="pZones" class="g2">
+      <div><span class="lbl">From Time Zone</span><select id="pFrom"></select></div>
+      <div><span class="lbl">To Time Zone (Primary)</span><select id="pPrimary"></select></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+      <button class="primary" onclick="doPlan()">Plan Meeting</button>
+      <div class="err" id="pErr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE -->
+<div class="page" id="pg-schedule">
+  <div class="card wide">
+    <h1 class="title">Meeting Schedule</h1>
+    <p class="subtitle">Next 24 hours, 1-hour steps starting at 12:00 AM for the selected date.</p>
+    <div class="legend">
+      <span class="legend-item"><span class="ldot w"></span>Working hours (9 AM–5 PM, per zone)</span>
+      <span class="legend-item"><span class="ldot s"></span>Sleeping hours (10 PM–7 AM, per zone)</span>
+      <span class="legend-item"><span class="ldot aw"></span>All zones working — best meeting time</span>
+    </div>
+    <div class="ssum" id="sSum"></div>
+    <div class="twrap"><table class="sched" id="sTbl"><thead></thead><tbody></tbody></table></div>
+    <p class="snote">First row = 12:00 AM start. Each cell is highlighted individually: green = working hours, red = sleeping hours. Bright green outline = all zones are in working hours simultaneously.</p>
+  </div>
+</div>
+
+<script>
+const Z=[
+  {v:-12,l:"UTC-12 (Baker Island)"},{v:-11,l:"UTC-11 (Pago Pago)"},{v:-10,l:"UTC-10 (Honolulu)"},
+  {v:-9.5,l:"UTC-9:30 (Marquesas Islands)"},{v:-9,l:"UTC-9 (Anchorage)"},{v:-8,l:"UTC-8 (Los Angeles)"},
+  {v:-7,l:"UTC-7 (Denver)"},{v:-6,l:"UTC-6 (Chicago)"},{v:-5,l:"UTC-5 (New York)"},
+  {v:-4,l:"UTC-4 (Halifax)"},{v:-3.5,l:"UTC-3:30 (St. John's)"},{v:-3,l:"UTC-3 (Buenos Aires)"},
+  {v:-2,l:"UTC-2 (South Georgia)"},{v:-1,l:"UTC-1 (Azores)"},{v:0,l:"UTC (London)"},
+  {v:1,l:"UTC+1 (Berlin)"},{v:2,l:"UTC+2 (Cairo)"},{v:3,l:"UTC+3 (Moscow)"},
+  {v:3.5,l:"UTC+3:30 (Tehran)"},{v:4,l:"UTC+4 (Dubai)"},{v:4.5,l:"UTC+4:30 (Kabul)"},
+  {v:5,l:"UTC+5 (Karachi)"},{v:5.5,l:"UTC+5:30 (New Delhi)"},{v:5.75,l:"UTC+5:45 (Kathmandu)"},
+  {v:6,l:"UTC+6 (Dhaka)"},{v:6.5,l:"UTC+6:30 (Yangon)"},{v:7,l:"UTC+7 (Bangkok)"},
+  {v:8,l:"UTC+8 (Singapore)"},{v:8.75,l:"UTC+8:45 (Eucla)"},{v:9,l:"UTC+9 (Tokyo)"},
+  {v:9.5,l:"UTC+9:30 (Adelaide)"},{v:10,l:"UTC+10 (Sydney)"},{v:10.5,l:"UTC+10:30 (Lord Howe Island)"},
+  {v:11,l:"UTC+11 (Noumea)"},{v:12,l:"UTC+12 (Auckland)"},{v:12.75,l:"UTC+12:45 (Chatham Islands)"},
+  {v:13,l:"UTC+13 (Apia)"},{v:14,l:"UTC+14 (Kiritimati)"}
+];
+
+function fill(el,sel){el.innerHTML=Z.map(z=>`<option value="${z.v}"${z.v===sel?' selected':''}>${z.l}</option>`).join('');}
+function pad(n){return String(n).padStart(2,'0');}
+function f12s(d){const h=d.getUTCHours(),m=pad(d.getUTCMinutes()),s=pad(d.getUTCSeconds());return `${pad(h%12||12)}:${m}:${s} ${h>=12?'PM':'AM'}`;}
+function f12(d){const h=d.getUTCHours(),m=pad(d.getUTCMinutes());return `${pad(h%12||12)}:${m} ${h>=12?'PM':'AM'}`;}
+function fDate(d){return new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',timeZone:'UTC'}).format(d);}
+function fDT(ms,om){const d=new Date(ms+om*60000);return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()} ${f12(d)}`;}
+function dShift(a,b){const am=Date.UTC(a.getUTCFullYear(),a.getUTCMonth(),a.getUTCDate()),bm=Date.UTC(b.getUTCFullYear(),b.getUTCMonth(),b.getUTCDate()),d=Math.round((bm-am)/86400000);return d===1?' (next date)':d===-1?' (previous date)':'';}
+function zLabel(v){return Z.find(z=>z.v===v)?.l||'';}
+
+const PAGES={
+  auto:{title:'Time Zone Converter',links:[{l:'Manual Input',p:'manual'},{l:'Global Meeting Planner',p:'planner'}]},
+  manual:{title:'Manual Converter',links:[{l:'Current Time',p:'auto'},{l:'Global Meeting Planner',p:'planner'}]},
+  planner:{title:'Global Meeting Planner',links:[{l:'Current Time',p:'auto'},{l:'Manual Input',p:'manual'}]},
+  schedule:{title:'Meeting Schedule',links:[{l:'Current Time',p:'auto'},{l:'Manual Input',p:'manual'},{l:'Global Meeting Planner',p:'planner'}]},
+};
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));
+  document.getElementById('pg-'+name).classList.add('show');
+  const c=PAGES[name];
+  document.getElementById('hdrTitle').textContent=c.title;
+  // Desktop links
+  document.getElementById('hdrLinks').innerHTML=c.links.map(lk=>`<button onclick="showPage('${lk.p}')">${lk.l}</button>`).join('');
+  // Mobile dropdown
+  document.getElementById('hdrDropdown').innerHTML=c.links.map(lk=>`<button onclick="showPage('${lk.p}');closeMenu()">${lk.l}</button>`).join('');
+  closeMenu();
+  window.scrollTo(0,0);
+}
+
+function toggleMenu(){
+  const burger=document.getElementById('hdrBurger');
+  const dropdown=document.getElementById('hdrDropdown');
+  const open=dropdown.classList.toggle('open');
+  burger.classList.toggle('open',open);
+}
+function closeMenu(){
+  document.getElementById('hdrBurger').classList.remove('open');
+  document.getElementById('hdrDropdown').classList.remove('open');
+}
+// Close menu when tapping outside
+document.addEventListener('click',e=>{
+  const hdr=document.getElementById('topHeader');
+  if(!hdr.contains(e.target)) closeMenu();
+});
+
+// Auto converter
+fill(document.getElementById('aFrom'),-5);
+fill(document.getElementById('aTo'),0);
+function doAuto(){
+  const from=+document.getElementById('aFrom').value, to=+document.getElementById('aTo').value;
+  const now=Date.now();
+  const fd=new Date(now+from*3600000), td=new Date(now+to*3600000);
+  document.getElementById('liveDisp').textContent=`${fDate(fd)} · ${f12s(fd)} · ${zLabel(from)}`;
+  document.getElementById('aRes').textContent=`${fDate(td)} · ${f12s(td)} · ${zLabel(to)}${dShift(fd,td)}`;
+}
+document.getElementById('aFrom').addEventListener('change',doAuto);
+document.getElementById('aTo').addEventListener('change',doAuto);
+doAuto(); setInterval(doAuto,1000);
+
+// Manual converter
+fill(document.getElementById('mFrom'),-5);
+fill(document.getElementById('mTo'),0);
+function doManual(){
+  const tv=document.getElementById('mTime').value;
+  const from=+document.getElementById('mFrom').value, to=+document.getElementById('mTo').value;
+  const res=document.getElementById('mRes');
+  if(!tv){res.textContent='Please select a time first.';res.classList.add('show');return;}
+  const [h,m]=tv.split(':').map(Number);
+  const now=new Date();
+  const bu=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0);
+  const utc=bu+(h*60+m-from*60)*60000;
+  const fd=new Date(utc+from*3600000), td=new Date(utc+to*3600000);
+  res.textContent=`${f12(fd)} from ${zLabel(from)} → ${zLabel(to)}: ${f12(td)}${dShift(fd,td)}`;
+  res.classList.add('show');
+}
+
+// Planner
+fill(document.getElementById('pFrom'),-5);
+fill(document.getElementById('pPrimary'),0);
+let pCount=1, secSel=null;
+function setCount(n){
+  pCount=n;
+  document.getElementById('s1').classList.toggle('active',n===1);
+  document.getElementById('s2').classList.toggle('active',n===2);
+  const g=document.getElementById('pZones');
+  if(n===2){
+    g.className='g3';
+    if(!secSel){
+      const d=document.createElement('div');
+      d.id='secField';
+      d.innerHTML='<span class="lbl">To Time Zone (Secondary)</span>';
+      secSel=document.createElement('select');
+      fill(secSel,1);
+      d.appendChild(secSel);
+      g.appendChild(d);
+    }
+  } else {
+    g.className='g2';
+    const f=document.getElementById('secField');
+    if(f)f.remove(); secSel=null;
+  }
+}
+function doPlan(){
+  const date=document.getElementById('pDate').value;
+  const err=document.getElementById('pErr');
+  if(!date){err.textContent='Select a valid date to continue.';err.classList.add('show');return;}
+  err.classList.remove('show');
+  const fv=+document.getElementById('pFrom').value;
+  const pv=+document.getElementById('pPrimary').value;
+  let sv=null,sl=null;
+  if(pCount===2&&secSel){sv=+secSel.value;sl=zLabel(sv);}
+  buildSched(date,fv,zLabel(fv),pv,zLabel(pv),sv,sl);
+  showPage('schedule');
+}
+
+// Schedule
+function cellClass(h){
+  if(h>=9&&h<17) return 'cell-work';
+  if(h>=22||h<7) return 'cell-sleep';
+  return '';
+}
+function buildSched(date,fv,fl,pv,pl,sv,sl){
+  const [yr,mo,dy]=date.split('-').map(Number);
+  const start=Date.UTC(yr,mo-1,dy,0,0,0)-fv*3600000;
+  const zones=[{label:fl,om:fv*60},{label:pl,om:pv*60}];
+  if(sv!==null)zones.push({label:sl,om:sv*60});
+  const thead=document.querySelector('#sTbl thead'), tbody=document.querySelector('#sTbl tbody');
+  thead.innerHTML=''; tbody.innerHTML='';
+  const hr=document.createElement('tr');
+  zones.forEach(z=>{const th=document.createElement('th');th.textContent=z.label;hr.appendChild(th);});
+  thead.appendChild(hr);
+  for(let i=0;i<24;i++){
+    const ms=start+i*3600000;
+    const tr=document.createElement('tr');
+    if(i===0)tr.classList.add('fr');
+    // get each zone's hour at this utc moment
+    const hours=zones.map(z=>new Date(ms+z.om*60000).getUTCHours());
+    const allWork=hours.every(h=>h>=9&&h<17);
+    if(allWork) tr.classList.add('all-work');
+    zones.forEach((z,zi)=>{
+      const td=document.createElement('td');
+      td.textContent=fDT(ms,z.om);
+      if(!allWork){ // per-cell only when not all-work (all-work row style handles it)
+        const cc=cellClass(hours[zi]);
+        if(cc)td.classList.add(cc);
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+  document.getElementById('sSum').textContent=`Schedule for ${date}, starting 12:00 AM in ${fl}.`;
+}
+
+showPage('auto');
+</script>
+</body>
+</html>
